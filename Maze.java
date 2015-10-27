@@ -58,6 +58,11 @@ public class Maze {
         // have been visited by the generating algorithm
         int totalVisitedPoints = 1;
 
+        // Randomly choose a direction to favor when creating the path
+        String[] directions = {"horizontal", "vertical", "shiftchange", "none"};
+        String randomDirection =
+            directions[(int)(Math.random() * 10) % directions.length];
+
         Point thisPoint = this.points[0][this.height - 1];
         Stack<Point> path = new Stack<Point>();
         while (totalVisitedPoints < this.width * this.height) {
@@ -68,7 +73,7 @@ public class Maze {
             if (this.hasUnvisitedNeighbors(thisPointNeighbors)) {
                 // choose random unvisited neighbor
                 Point nextPoint
-                    = this.getRandomUnvisitedNeighbor(thisPointNeighbors);
+                    = this.getRandomUnvisitedNeighbor(thisPoint, randomDirection);
 
                 // push the current point to the stack
                 path.push(thisPoint);
@@ -119,6 +124,39 @@ public class Maze {
         return randomPoint;
     }
 
+    private Point getRandomUnvisitedNeighbor(Point point, String direction) {
+        // Given the point and the direction to favor, return a random
+        // neighbor.
+        ArrayList<Point> neighbors = getNeighbors(point);
+
+        if (direction == "horizontal") {
+            // Favor horizontal neighbors by adding all the horizontal
+            // neighbors to the given list of neighbors a couple of times. This
+            // means they will be more likely to be chosen.
+            neighbors.addAll(getHorizontalNeighbors(point));
+            neighbors.addAll(getHorizontalNeighbors(point));
+            return getRandomUnvisitedNeighbor(neighbors);
+        } else if (direction == "vertical") {
+            // Favor vertical neighbors by adding all the vertical neighbors to
+            // the given list of neighbors a couple of times. This means they
+            // will be more likely to be chosen.
+            neighbors.addAll(getVerticalNeighbors(point));
+            neighbors.addAll(getVerticalNeighbors(point));
+            return getRandomUnvisitedNeighbor(neighbors);
+        } else if (direction == "shiftchange") {
+            // Half way through the puzzle switch from favoring horizontal to
+            // favoring vertical. This is most effective in larger puzzles.
+            int halfway = this.width / 2;
+            if (point.x > halfway) {
+                return getRandomUnvisitedNeighbor(point, "horizontal");
+            } else {
+                return getRandomUnvisitedNeighbor(point, "vertical");
+            }
+        } else {
+            return getRandomUnvisitedNeighbor(neighbors);
+        }
+    }
+
     private boolean hasUnvisitedNeighbors(ArrayList<Point> neighbors) {
         for (Point thisPoint : neighbors) {
             if (!thisPoint.visited) {
@@ -131,7 +169,30 @@ public class Maze {
     private ArrayList<Point> getNeighbors(Point point) {
         // Given a Point, return an array containing all its neighbors
         // horizontally and vertically
+        ArrayList<Point> neighbors = getHorizontalNeighbors(point);
+        neighbors.addAll(getVerticalNeighbors(point));
+        return neighbors;
+    }
 
+    private ArrayList<Point> getVerticalNeighbors(Point point) {
+        ArrayList<Point> neighbors = new ArrayList<Point>();
+        int thisPointX = point.x;
+        int thisPointY = point.y;
+
+        // neighbor below
+        if (thisPointY > 0) {
+            neighbors.add(this.points[thisPointX][thisPointY - 1]);
+        }
+
+        // neighbor above
+        if (thisPointY < this.height - 1) {
+            neighbors.add(this.points[thisPointX][thisPointY + 1]);
+        }
+
+        return neighbors;
+    }
+
+    private ArrayList<Point> getHorizontalNeighbors(Point point) {
         ArrayList<Point> neighbors = new ArrayList<Point>();
         int thisPointX = point.x;
         int thisPointY = point.y;
@@ -144,16 +205,6 @@ public class Maze {
         // neighbor to the left
         if (thisPointX > 0) {
             neighbors.add(this.points[thisPointX - 1][thisPointY]);
-        }
-
-        // neighbor below
-        if (thisPointY > 0) {
-            neighbors.add(this.points[thisPointX][thisPointY - 1]);
-        }
-
-        // neighbor above
-        if (thisPointY < this.height - 1) {
-            neighbors.add(this.points[thisPointX][thisPointY + 1]);
         }
 
         return neighbors;
@@ -193,5 +244,3 @@ class Point {
         this.y = y;
     }
 }
-
-
